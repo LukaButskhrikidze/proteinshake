@@ -41,6 +41,16 @@ class SequenceDataset:
         self.size = len(self.sequences)
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, idx):
+        seq = self.sequences[idx]
+        return {
+            'sequence': torch.tensor(seq.tokens, dtype=torch.long),
+            'id': idx,
+        }
+
     def strings(self):
         """ Returns all sequences as plain amino acid strings. """
         return [seq.sequence for seq in self.sequences]
