@@ -18,7 +18,7 @@ class Sequence:
     def __init__(self, protein):
         self.protein_dict = protein
         self.sequence = protein['protein']['sequence']
-        self.tokens = np.array(tokenize(self.sequence, resolution='residue'))  # make it explicitly a NumPy array
+        self.tokens = tokenize(self.sequence, resolution='residue')  # make it explicitly a NumPy array
         self.data = self.tokens  # compatibility with other representations
 
 
