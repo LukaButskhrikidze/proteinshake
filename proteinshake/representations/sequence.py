@@ -42,9 +42,6 @@ class SequenceDataset:
         self.size = len(self.sequences)
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
-    def __len__(self):
-        return len(self.sequences)
-
     def __getitem__(self, idx):
         seq = self.sequences[idx]
         return {
