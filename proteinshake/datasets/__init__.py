@@ -21,7 +21,8 @@ __all__ = [
     'ProteinLigandInterfaceDataset',
     'SCOPDataset',
     'TMAlignDataset',
-    'ProteinLigandDecoysDataset'
+    'ProteinLigandDecoysDataset',
+    'MisatoProteinLigandDataset'
     ]
 
 classes = __all__
