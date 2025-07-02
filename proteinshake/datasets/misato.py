@@ -16,10 +16,14 @@ class MisatoProteinLigandDataset(Dataset):
         return [f"{self.root}/raw/MD.hdf5"]
 
     def download(self):
-        """Download the Misato MD dataset from Zenodo."""
         url = "https://zenodo.org/record/7711953/files/MD.hdf5"
-        out_path = f"{self.root}/raw/files/MD.hdf5"
+        out_path = os.path.join(self.root, 'raw', 'files', 'MD.hdf5')
+
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+    if not os.path.exists(out_path):
+        download_url(url, out_path, description="Downloading Misato MD dataset", verbosity=self.verbosity)
+
     
     if not os.path.exists(out_path):
         download_url(url, out_path, description="Downloading Misato MD dataset", verbosity=self.verbosity)
