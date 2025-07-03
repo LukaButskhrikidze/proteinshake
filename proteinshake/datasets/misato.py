@@ -24,11 +24,6 @@ class MisatoProteinLigandDataset(Dataset):
     if not os.path.exists(out_path):
         download_url(url, out_path, description="Downloading Misato MD dataset", verbosity=self.verbosity)
 
-    
-    if not os.path.exists(out_path):
-        download_url(url, out_path, description="Downloading Misato MD dataset", verbosity=self.verbosity)
-
-
     def get_id_from_filename(self, filename):
         return filename.split(".")[0]
 
