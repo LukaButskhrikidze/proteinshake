@@ -44,7 +44,8 @@ class MisatoProteinLigandDataset(Dataset):
         """Extract protein ID from filename."""
         # MISATO files typically have format like: protein_id_ligand_id.pdb
         basename = os.path.basename(filename)
-        return basename.replace('.pdb', '').split('_')[0]
+        # Remove .pdb extension and use the full name as ID for MISATO
+        return basename.replace('.pdb', '')
 
     def download(self):
         """Downloads the MISATO dataset from Zenodo."""
@@ -54,18 +55,15 @@ class MisatoProteinLigandDataset(Dataset):
         
         if self.subset == 'train':
             files_to_download.extend([
-                'train_set.tar.gz',
-                'train_set_no_lig.tar.gz'
+                'train_set.tar.gz'
             ])
         elif self.subset == 'test':
             files_to_download.extend([
-                'test_set.tar.gz',
-                'test_set_no_lig.tar.gz'
+                'test_set.tar.gz'
             ])
         elif self.subset == 'val':
             files_to_download.extend([
-                'val_set.tar.gz',
-                'val_set_no_lig.tar.gz'
+                'val_set.tar.gz'
             ])
         else:
             error(f'Unknown subset: {self.subset}. Must be one of: train, test, val', 
@@ -81,8 +79,7 @@ class MisatoProteinLigandDataset(Dataset):
 
         # Download metadata
         files_to_download.extend([
-            'misato_db.csv',
-            'README.md'
+            'misato_db.csv'
         ])
 
         # Download files
@@ -100,6 +97,12 @@ class MisatoProteinLigandDataset(Dataset):
                 tar_path = f'{self.root}/raw/{filename}'
                 if os.path.exists(tar_path):
                     self._extract_tar_gz(tar_path)
+                    
+        # Check if any PDB files were extracted
+        pdb_files = self.get_raw_files()
+        if len(pdb_files) == 0:
+            warning('No PDB files found after extraction. Please check the dataset structure.', 
+                   verbosity=self.verbosity)
 
     def _extract_tar_gz(self, tar_path):
         """Extract tar.gz file to the files directory."""
@@ -153,4 +156,50 @@ class MisatoProteinLigandDataset(Dataset):
         if not self.include_md:
             return []
         return glob.glob(f'{self.root}/raw/files/**/*.xtc', recursive=True)
+    
+    def debug_structure(self):
+        """Debug method to show the structure of downloaded files."""
+        print("=== MISATO Dataset Structure Debug ===")
+        print(f"Root directory: {self.root}")
+        print(f"Raw directory contents:")
         
+        raw_dir = f'{self.root}/raw'
+        if os.path.exists(raw_dir):
+            for item in os.listdir(raw_dir):
+                item_path = os.path.join(raw_dir, item)
+                if os.path.isdir(item_path):
+                    print(f"  📁 {item}/")
+                    # Show first few files in subdirectories
+                    try:
+                        sub_files = os.listdir(item_path)[:5]
+                        for sub_file in sub_files:
+                            print(f"    📄 {sub_file}")
+                        if len(os.listdir(item_path)) > 5:
+                            print(f"    ... and {len(os.listdir(item_path)) - 5} more files")
+                    except:
+                        pass
+                else:
+                    print(f"  📄 {item}")
+        
+        print(f"\nPDB files found: {len(self.get_raw_files())}")
+        pdb_files = self.get_raw_files()[:5]  # Show first 5
+        for pdb_file in pdb_files:
+            print(f"  📄 {pdb_file}")
+        if len(self.get_raw_files()) > 5:
+            print(f"  ... and {len(self.get_raw_files()) - 5} more PDB files")
+        
+        print("=== End Debug ===")
+        
+    def check_pdb_validity(self, pdb_path):
+        """Check if a PDB file is valid and can be parsed."""
+        try:
+            with open(pdb_path, 'r') as f:
+                content = f.read()
+                if len(content.strip()) == 0:
+                    return False, "Empty file"
+                if not any(line.startswith('ATOM') for line in content.split('\n')):
+                    return False, "No ATOM records found"
+                return True, "Valid"
+        except Exception as e:
+            return False, str(e)
+            
