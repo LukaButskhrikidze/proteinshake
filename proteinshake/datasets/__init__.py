@@ -9,7 +9,7 @@ from .tm_align import TMAlignDataset
 from .alphafold import AlphaFoldDataset
 from .scop import SCOPDataset
 from .protein_ligand_decoys import ProteinLigandDecoysDataset
-from .misato import MisatoProteinLigandDataset
+from .misato import MisatoDataset
 
 __all__ = [
     'Dataset',
