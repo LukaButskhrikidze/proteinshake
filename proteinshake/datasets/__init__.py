@@ -23,7 +23,7 @@ __all__ = [
     'SCOPDataset',
     'TMAlignDataset',
     'ProteinLigandDecoysDataset',
-    'MisatoProteinLigandDataset'
+    'MisatoDataset'
     ]
 
 classes = __all__
