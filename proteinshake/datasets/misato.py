@@ -3,7 +3,7 @@ import glob
 import requests
 from joblib import Parallel, delayed
 
-from proteinshake.dataset import Dataset
+from proteinshake.datasets import Dataset
 from proteinshake.utils import download_url, unzip_file, progressbar
 
 
