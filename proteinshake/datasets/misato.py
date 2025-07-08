@@ -19,37 +19,46 @@ class ZenodoProteinDataset(Dataset):
         super().__init__(**kwargs)
 
     def get_raw_files(self):
-        return glob.glob(f'{self.root}/raw/files/*.pdb')
+        return glob.glob(f'{self.root}/raw/files/*.npy')
 
     def get_id_from_filename(self, filename):
-        return os.path.basename(filename).split('.')[0].lower()
+        return os.path.basename(filename).split('.')[0]
 
-    def download(self):
-        os.makedirs(f'{self.root}/raw/files', exist_ok=True)
+    def parse_pdb(self, path):
+        try:
+            pdbid = self.get_id_from_filename(path)
 
-        if self.verbosity > 0:
-            print(f"Querying Zenodo record {self.zenodo_id}...")
+            coords = np.load(path)  # assume shape (N, 3)
+            n_atoms = coords.shape[0]
 
-        zenodo_api = f'https://zenodo.org/api/records/{self.zenodo_id}'
-        r = requests.get(zenodo_api)
-        r.raise_for_status()
-        record = r.json()
+            protein = {
+                'protein': {
+                    'ID': pdbid,
+                    'sequence': 'X' * n_atoms  # dummy sequence
+                },
+                'atom': {
+                    'atom_number': list(range(n_atoms)),
+                    'atom_type': ['C'] * n_atoms,  # dummy atom type
+                    'residue_number': list(range(n_atoms)),
+                    'residue_type': ['X'] * n_atoms,
+                    'x': coords[:, 0].tolist(),
+                    'y': coords[:, 1].tolist(),
+                    'z': coords[:, 2].tolist(),
+                    'SASA': [-1] * n_atoms
+                },
+                'residue': {
+                    'residue_number': list(range(n_atoms)),
+                    'residue_type': ['X'] * n_atoms,
+                    'x': coords[:, 0].tolist(),
+                    'y': coords[:, 1].tolist(),
+                    'z': coords[:, 2].tolist(),
+                    'SASA': [-1] * n_atoms,
+                    'RSA': [-1] * n_atoms
+                }
+            }
 
-        files = [
-            f for f in record['files']
-            if f['key'].endswith('.pdb') or f['key'].endswith('.pdb.gz')
-        ]
-
-        if self.limit:
-            files = files[:self.limit]
-
-        def fetch_file(f):
-            url = f['links']['self']
-            out_path = os.path.join(self.root, 'raw', 'files', os.path.basename(f['key']))
-            download_url(url, os.path.dirname(out_path), verbosity=self.verbosity)
-            if out_path.endswith('.gz'):
-                unzip_file(out_path)
-
-        Parallel(n_jobs=self.n_jobs)(
-            delayed(fetch_file)(f) for f in progressbar(files, desc='Downloading proteins from Zenodo', verbosity=self.verbosity)
-        )
+            return protein
+        except Exception as e:
+            if self.verbosity > 0:
+                print(f"Failed to parse {path}: {e}")
+            return None
