@@ -1,9 +1,19 @@
 import os
+import glob
 import requests
-from proteinshake.utils import download_url, unzip_file, progressbar
 from joblib import Parallel, delayed
 
+from proteinshake.datasets import Dataset
+from proteinshake.utils import download_url, unzip_file, progressbar
+
+
 class ZenodoProteinDataset(Dataset):
+    """
+    Downloads PDB structures from Zenodo record 7711953 and parses them.
+
+    Only files ending in `.pdb` or `.pdb.gz` are considered.
+    """
+
     def __init__(self, zenodo_id=7711953, **kwargs):
         self.zenodo_id = zenodo_id
         super().__init__(**kwargs)
@@ -17,14 +27,19 @@ class ZenodoProteinDataset(Dataset):
     def download(self):
         os.makedirs(f'{self.root}/raw/files', exist_ok=True)
 
+        if self.verbosity > 0:
+            print(f"Querying Zenodo record {self.zenodo_id}...")
+
         zenodo_api = f'https://zenodo.org/api/records/{self.zenodo_id}'
         r = requests.get(zenodo_api)
+        r.raise_for_status()
         record = r.json()
 
-        # Filter for protein files (e.g., .pdb or .pdb.gz)
-        files = [f for f in record['files'] if f['key'].endswith('.pdb') or f['key'].endswith('.pdb.gz')]
+        files = [
+            f for f in record['files']
+            if f['key'].endswith('.pdb') or f['key'].endswith('.pdb.gz')
+        ]
 
-        # Optional: apply self.limit for testing
         if self.limit:
             files = files[:self.limit]
 
@@ -35,4 +50,6 @@ class ZenodoProteinDataset(Dataset):
             if out_path.endswith('.gz'):
                 unzip_file(out_path)
 
-        Parallel(n_jobs=self.n_jobs)(delayed(fetch_file)(f) for f in progressbar(files, desc='Downloading proteins from Zenodo', verbosity=self.verbosity))
+        Parallel(n_jobs=self.n_jobs)(
+            delayed(fetch_file)(f) for f in progressbar(files, desc='Downloading proteins from Zenodo', verbosity=self.verbosity)
+        )
